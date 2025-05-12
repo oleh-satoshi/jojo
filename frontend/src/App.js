@@ -3,20 +3,16 @@ import "./App.css";
 
 function App() {
   const [scanCount, setScanCount] = useState(0);
-  const [showFolders, setShowFolders] = useState(true);
   const [folders, setFolders] = useState([]);
-  const [showNewFolderInput, setShowNewFolderInput] = useState(false);
-  const [parentFolderForNew, setParentFolderForNew] = useState(null);
-  const [newFolderName, setNewFolderName] = useState("");
   const [qrCodes, setQrCodes] = useState([]);
-  const [expandedFolders, setExpandedFolders] = useState({});
-  const [activeFolderMenu, setActiveFolderMenu] = useState(null);
-  const [editingFolder, setEditingFolder] = useState(null);
-  const [editingFolderName, setEditingFolderName] = useState("");
+  const [currentFolder, setCurrentFolder] = useState(null); // null означает корневую директорию
+  const [showNewFolderInput, setShowNewFolderInput] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
   const [selectedQR, setSelectedQR] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [deleteType, setDeleteType] = useState("");
   const [showNotification, setShowNotification] = useState(true);
+  const [breadcrumbs, setBreadcrumbs] = useState([]);
 
   const modalRef = useRef(null);
   const newFolderInputRef = useRef(null);
@@ -26,6 +22,7 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     const telegramId = params.get('telegramId');
     const totalScans = params.get('totalScans') || 0;
+    const folderId = params.get('folderId');
     
     if (telegramId) {
       localStorage.setItem('telegramId', telegramId);
@@ -42,36 +39,31 @@ function App() {
     let storedFolders = JSON.parse(localStorage.getItem('folders') || '[]');
     
     if (storedFolders.length === 0) {
-      // Sample folder structure with nesting
+      // Sample folder structure
       storedFolders = [
         {
           id: "1",
           name: "Личные QR",
-          level: 0,
           parentId: null,
         },
         {
           id: "2",
           name: "Рабочие QR с очень длинным названием для тестирования",
-          level: 0,
           parentId: null,
         },
         {
           id: "3",
           name: "Клиенты",
-          level: 1,
           parentId: "2",
         },
         {
           id: "4",
           name: "Встречи",
-          level: 1,
           parentId: "2",
         },
         {
           id: "5",
           name: "Важные",
-          level: 2,
           parentId: "4",
         }
       ];
@@ -81,12 +73,10 @@ function App() {
     
     setFolders(storedFolders);
     
-    // Автоматически раскрываем все папки для демонстрации
-    const expandedState = {};
-    storedFolders.forEach(folder => {
-      expandedState[folder.id] = true;
-    });
-    setExpandedFolders(expandedState);
+    // Если в URL передан ID папки, открываем её
+    if (folderId) {
+      openFolder(folderId);
+    }
     
     // Load QR codes from localStorage or use sample data if none exists
     let storedQRs = JSON.parse(localStorage.getItem('qr_codes') || '[]');
@@ -140,24 +130,50 @@ function App() {
     }
   }, [showNewFolderInput]);
 
-  const toggleFolders = () => {
-    setShowFolders(!showFolders);
+  // Обновляем хлебные крошки при смене текущей папки
+  useEffect(() => {
+    if (currentFolder === null) {
+      setBreadcrumbs([]);
+      return;
+    }
+    
+    const buildBreadcrumbs = () => {
+      const result = [];
+      let current = folders.find(f => f.id === currentFolder);
+      
+      while (current) {
+        result.unshift({
+          id: current.id,
+          name: current.name
+        });
+        
+        current = folders.find(f => f.id === current.parentId);
+      }
+      
+      return result;
+    };
+    
+    setBreadcrumbs(buildBreadcrumbs());
+  }, [currentFolder, folders]);
+
+  const openFolder = (folderId) => {
+    setCurrentFolder(folderId);
   };
 
-  const toggleFolderExpansion = (folderId) => {
-    setExpandedFolders(prev => ({
-      ...prev,
-      [folderId]: !prev[folderId]
-    }));
+  const goBack = () => {
+    if (breadcrumbs.length <= 1) {
+      setCurrentFolder(null);
+    } else {
+      const parentId = folders.find(f => f.id === currentFolder)?.parentId;
+      setCurrentFolder(parentId);
+    }
   };
 
-  const toggleFolderMenu = (folderId, e) => {
-    if (e) e.stopPropagation();
-    setActiveFolderMenu(activeFolderMenu === folderId ? null : folderId);
+  const goToFolder = (folderId) => {
+    setCurrentFolder(folderId);
   };
 
-  const handleCreateFolder = (parentId = null) => {
-    setParentFolderForNew(parentId);
+  const handleCreateFolder = () => {
     setShowNewFolderInput(true);
     setNewFolderName("");
   };
@@ -167,9 +183,7 @@ function App() {
       const newFolder = {
         id: Date.now().toString(),
         name: newFolderName,
-        level: parentFolderForNew ? 
-               folders.find(f => f.id === parentFolderForNew)?.level + 1 : 0,
-        parentId: parentFolderForNew
+        parentId: currentFolder
       };
       
       const newFolders = [...folders, newFolder];
@@ -177,23 +191,12 @@ function App() {
       localStorage.setItem('folders', JSON.stringify(newFolders));
       setNewFolderName("");
       setShowNewFolderInput(false);
-      setParentFolderForNew(null);
-      
-      // Автоматически раскрываем родительскую папку
-      if (parentFolderForNew) {
-        setExpandedFolders(prev => ({
-          ...prev,
-          [parentFolderForNew]: true
-        }));
-      }
     }
   };
 
-  const startDeleteFolder = (folderId, withQRs, e) => {
-    if (e) e.stopPropagation();
+  const startDeleteFolder = (folderId, withQRs) => {
     setShowDeleteConfirm(folderId);
     setDeleteType(withQRs ? "withQRs" : "folderOnly");
-    setActiveFolderMenu(null);
   };
 
   const confirmDeleteFolder = () => {
@@ -221,33 +224,30 @@ function App() {
       localStorage.setItem('qr_codes', JSON.stringify(updatedQRs));
     }
     
+    // Если мы удалили текущую папку, возвращаемся назад
+    if (folderId === currentFolder) {
+      goBack();
+    }
+    
     setShowDeleteConfirm(null);
     setDeleteType("");
   };
 
-  const startRenameFolder = (folderId, currentName, e) => {
-    if (e) e.stopPropagation();
-    setEditingFolder(folderId);
-    setEditingFolderName(currentName);
-    setActiveFolderMenu(null);
-  };
-
-  const saveRenameFolder = (e) => {
-    if (e) e.preventDefault();
-    if (editingFolderName.trim() && editingFolder) {
+  const renameFolder = (folderId) => {
+    const folder = folders.find(f => f.id === folderId);
+    const newName = prompt("Введите новое название папки:", folder.name);
+    
+    if (newName && newName.trim()) {
       const updatedFolders = folders.map(folder => 
-        folder.id === editingFolder ? { ...folder, name: editingFolderName } : folder
+        folder.id === folderId ? { ...folder, name: newName.trim() } : folder
       );
       setFolders(updatedFolders);
       localStorage.setItem('folders', JSON.stringify(updatedFolders));
-      setEditingFolder(null);
     }
   };
 
-  const createQRInFolder = (folderId, e) => {
-    if (e) e.stopPropagation();
-    // Redirect to QR creation page with folder ID
-    window.location.href = `qr_shape_picker.html?folderId=${folderId}`;
+  const createQRInFolder = (folderId) => {
+    window.location.href = `qr_shape_picker.html?folderId=${folderId || ''}`;
   };
 
   const handleQRClick = (qr) => {
@@ -272,141 +272,6 @@ function App() {
     setShowNotification(false);
   };
 
-  const renderFolders = (parentId = null, level = 0) => {
-    const foldersForLevel = folders.filter(folder => folder.parentId === parentId);
-    if (foldersForLevel.length === 0) return null;
-    
-    return (
-      <div className="folder-tree-level">
-        {foldersForLevel.map((folder, index) => {
-          const hasChildren = folders.some(f => f.parentId === folder.id);
-          const isExpanded = expandedFolders[folder.id];
-          const isLastInLevel = index === foldersForLevel.length - 1;
-          
-          // Проверяем есть ли QR-коды в этой папке
-          const hasQRs = qrCodes.some(qr => qr.folderId === folder.id);
-          
-          return (
-            <div key={folder.id} className={`folder-branch ${isLastInLevel && !hasChildren ? 'last-branch' : ''}`}>
-              <div 
-                className="folder-item"
-                onClick={() => toggleFolderExpansion(folder.id)}
-              >
-                <div className="folder-expand-indicator">
-                  {hasChildren && (
-                    <span className={`expand-icon ${isExpanded ? 'expanded' : ''}`}>
-                      {isExpanded ? '▼' : '►'}
-                    </span>
-                  )}
-                </div>
-                
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="folder-icon">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5v9a1.5 1.5 0 001.5 1.5h15a1.5 1.5 0 001.5-1.5v-6a1.5 1.5 0 00-1.5-1.5h-9l-2-3H4.5A1.5 1.5 0 003 7.5z" />
-                </svg>
-                
-                {editingFolder === folder.id ? (
-                  <form onSubmit={saveRenameFolder} className="rename-form">
-                    <input
-                      type="text"
-                      value={editingFolderName}
-                      onChange={(e) => setEditingFolderName(e.target.value)}
-                      onClick={(e) => e.stopPropagation()}
-                      autoFocus
-                      className="rename-input"
-                    />
-                    <button 
-                      type="submit" 
-                      className="rename-save-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        saveRenameFolder();
-                      }}
-                    >
-                      ✓
-                    </button>
-                  </form>
-                ) : (
-                  <span className="folder-name">{folder.name}</span>
-                )}
-                
-                <div className="folder-actions">
-                  <button 
-                    className="add-qr-to-folder-btn" 
-                    onClick={(e) => createQRInFolder(folder.id, e)}
-                    title="Добавить QR в эту папку"
-                  >
-                    <span className="add-qr-plus">+</span> Добавить QR
-                  </button>
-                  
-                  <button 
-                    className="add-subfolder-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCreateFolder(folder.id);
-                    }}
-                    title="Создать подпапку"
-                  >
-                    <span className="folder-plus">+</span>
-                  </button>
-                  
-                  <button 
-                    className="folder-menu-btn" 
-                    onClick={(e) => toggleFolderMenu(folder.id, e)}
-                    title="Меню папки"
-                  >
-                    ⋯
-                  </button>
-                  
-                  {activeFolderMenu === folder.id && (
-                    <div className="folder-menu" onClick={(e) => e.stopPropagation()}>
-                      <div className="menu-item" onClick={(e) => startRenameFolder(folder.id, folder.name, e)}>
-                        Переименовать
-                      </div>
-                      <div className="menu-item" onClick={(e) => startDeleteFolder(folder.id, false, e)}>
-                        Удалить папку
-                      </div>
-                      <div className="menu-item" onClick={(e) => startDeleteFolder(folder.id, true, e)}>
-                        Удалить со всеми QR
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {/* QR-коды в этой папке, если она раскрыта */}
-              {isExpanded && qrCodes
-                .filter(qr => qr.folderId === folder.id)
-                .map(qr => (
-                  <div key={qr.id} className="qr-in-folder">
-                    <div className="qr-card" onClick={() => handleQRClick(qr)}>
-                      <div className="qr-left">
-                        <img src={qr.imageUrl} alt="QR Code" />
-                        <div className="qr-info">
-                          <strong>{qr.name}</strong>
-                          <span>{qr.link.replace('https://', '')}</span>
-                        </div>
-                      </div>
-                      <div className="qr-scan-count-large">
-                        {qr.scanNumber}
-                      </div>
-                      <div className="qr-click-indicator">⊕</div>
-                    </div>
-                  </div>
-                ))}
-              
-              {/* Подпапки */}
-              {hasChildren && isExpanded && (
-                <div className="subfolder-container">
-                  {renderFolders(folder.id, level + 1)}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
   return (
     <div className="dashboard">
       <div className="stats-container">
@@ -418,7 +283,7 @@ function App() {
         
         <div className="vertical-divider"></div>
         
-        <button className="create-qr-btn" onClick={() => window.location.href='qr_shape_picker.html'}>
+        <button className="create-qr-btn" onClick={() => createQRInFolder(currentFolder)}>
           <svg className="qr-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect x="4" y="4" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5" />
             <rect x="14" y="4" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5" />
@@ -433,72 +298,139 @@ function App() {
         </button>
       </div>
 
-      <div className="folder-section">
-        {showNotification && (
-          <div className="notification">
-            <div className="notification-content">
-              <strong>Совет:</strong> Нажмите на QR-код для настройки или на папку для просмотра содержимого
-            </div>
-            <button className="notification-close" onClick={dismissNotification}>✕</button>
+      {showNotification && (
+        <div className="notification">
+          <div className="notification-content">
+            <strong>Совет:</strong> Нажмите на QR-код для настройки или на папку для просмотра содержимого
           </div>
-        )}
-      
-        <div className="folders-header">
-          <div className="folders-header-title" onClick={toggleFolders}>
-            Ваши папки
-            <span className="arrow-icon">{showFolders ? '▼' : '►'}</span>
-          </div>
-          <button 
-            className="create-root-folder-btn"
-            onClick={() => handleCreateFolder()}
-            title="Создать новую папку"
-          >
-            <span className="folder-plus">+</span> Создать папку
-          </button>
+          <button className="notification-close" onClick={dismissNotification}>✕</button>
         </div>
-        
-        {showFolders && (
-          <div className="folders-content">
-            {showNewFolderInput && (
-              <div className="new-folder-input">
-                <input
-                  ref={newFolderInputRef}
-                  type="text"
-                  value={newFolderName}
-                  onChange={(e) => setNewFolderName(e.target.value)}
-                  placeholder="Название папки"
-                  className="folder-input"
-                />
-                <button onClick={saveNewFolder} className="save-button">Сохранить</button>
-              </div>
-            )}
+      )}
+
+      {/* Navigation */}
+      <div className="folder-navigation">
+        {currentFolder !== null && (
+          <div className="folder-navigation-header">
+            <button className="back-button" onClick={goBack}>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+              Назад
+            </button>
             
-            <div className="folder-tree">
-              {renderFolders()}
+            <div className="breadcrumbs">
+              {breadcrumbs.map((crumb, index) => (
+                <React.Fragment key={crumb.id}>
+                  {index > 0 && <span className="breadcrumb-separator">/</span>}
+                  <span className="breadcrumb">{crumb.name}</span>
+                </React.Fragment>
+              ))}
             </div>
           </div>
         )}
       </div>
 
-      <div className="qr-section-title">Ваши QR-коды:</div>
-      <div className="qr-list">
-        {qrCodes
-          .filter(qr => qr.folderId === null)
-          .map((qr) => (
-            <div key={qr.id} className="qr-card" onClick={() => handleQRClick(qr)}>
-              <div className="qr-left">
-                <img src={qr.imageUrl} alt="QR Code" />
-                <div className="qr-info">
-                  <strong>{qr.name}</strong>
-                  <span>{qr.link.replace('https://', '')}</span>
+      {/* Folder content area */}
+      <div className="folder-section">
+        <div className="section-header">
+          <h2>{currentFolder ? folders.find(f => f.id === currentFolder)?.name : "Ваши папки"}</h2>
+          <button 
+            className="create-folder-btn"
+            onClick={handleCreateFolder}
+            title="Создать новую папку"
+          >
+            <span className="folder-plus">+</span> Создать папку
+          </button>
+        </div>
+
+        {showNewFolderInput && (
+          <div className="new-folder-input">
+            <input
+              ref={newFolderInputRef}
+              type="text"
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              placeholder="Название папки"
+              className="folder-input"
+            />
+            <button onClick={saveNewFolder} className="save-button">Сохранить</button>
+          </div>
+        )}
+
+        <div className="folder-content">
+          {folders
+            .filter(folder => folder.parentId === currentFolder)
+            .map(folder => (
+              <div key={folder.id} className="folder-item" onClick={() => openFolder(folder.id)}>
+                <div className="folder-icon-container">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="folder-icon">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5v9a1.5 1.5 0 001.5 1.5h15a1.5 1.5 0 001.5-1.5v-6a1.5 1.5 0 00-1.5-1.5h-9l-2-3H4.5A1.5 1.5 0 003 7.5z" />
+                  </svg>
+                </div>
+                <span className="folder-name">{folder.name}</span>
+                <div className="folder-actions">
+                  <button
+                    className="folder-action-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      renameFolder(folder.id);
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="action-icon">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                    </svg>
+                  </button>
+                  <button
+                    className="folder-action-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startDeleteFolder(folder.id, false);
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="action-icon">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                    </svg>
+                  </button>
                 </div>
               </div>
-              <div className="qr-scan-count-large">
-                {qr.scanNumber}
+            ))}
+        </div>
+      </div>
+
+      {/* QR codes section */}
+      <div className="qr-section">
+        <div className="section-header">
+          <h2>QR-коды {currentFolder ? "в этой папке" : ""}</h2>
+          {currentFolder && (
+            <button 
+              className="add-qr-to-folder-btn" 
+              onClick={() => createQRInFolder(currentFolder)}
+              title="Добавить QR в эту папку"
+            >
+              <span className="add-qr-plus">+</span> Добавить QR
+            </button>
+          )}
+        </div>
+
+        <div className="qr-list">
+          {qrCodes
+            .filter(qr => qr.folderId === currentFolder)
+            .map((qr) => (
+              <div key={qr.id} className="qr-card" onClick={() => handleQRClick(qr)}>
+                <div className="qr-left">
+                  <img src={qr.imageUrl} alt="QR Code" />
+                  <div className="qr-info">
+                    <strong>{qr.name}</strong>
+                    <span>{qr.link.replace('https://', '')}</span>
+                  </div>
+                </div>
+                <div className="qr-scan-count-large">
+                  {qr.scanNumber}
+                </div>
+                <div className="qr-click-indicator">⊕</div>
               </div>
-              <div className="qr-click-indicator">⊕</div>
-            </div>
-          ))}
+            ))}
+        </div>
       </div>
 
       {/* Модальное окно для QR-кода */}
