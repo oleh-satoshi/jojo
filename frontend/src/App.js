@@ -13,7 +13,7 @@ function App() {
   const [selectedQR, setSelectedQR] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [deleteType, setDeleteType] = useState("");
-  const [showFolders, setShowFolders] = useState(false);
+  const [showFolders, setShowFolders] = useState(true); // По умолчанию открыто
   
   // Форма для создания QR
   const [qrName, setQrName] = useState("");
@@ -47,12 +47,32 @@ function App() {
       storedFolders = [
         {
           id: "1",
-          name: "Личные QR",
+          name: "Рабочие QR с очень длинным названием для тестирования",
           parentId: null,
         },
         {
           id: "2",
-          name: "Рабочие QR",
+          name: "Клиенты",
+          parentId: null,
+        },
+        {
+          id: "3",
+          name: "Встречи",
+          parentId: null,
+        },
+        {
+          id: "4",
+          name: "Важные",
+          parentId: null,
+        },
+        {
+          id: "5",
+          name: "sfd",
+          parentId: null,
+        },
+        {
+          id: "6",
+          name: "пав",
           parentId: null,
         }
       ];
@@ -238,74 +258,74 @@ function App() {
   // Отображение домашней страницы
   const renderHome = () => (
     <>
-      <div className="stat-wrapper">
-        <div className="stat-left">
-          <div className="stat-label">Всего</div>
-          <div className="stat-count" id="scanCount">{scanCount}</div>
-          <div className="stat-sub">сканирований</div>
+      <div className="header">
+        <div className="scan-stats">
+          <div className="scan-label">Всего</div>
+          <div className="scan-count">{scanCount}</div>
+          <div className="scan-label">сканирований</div>
         </div>
-        <div className="stat-action" onClick={navigateToCreateQR}>
-          <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-          Создать QR
-        </div>
+        
+        <button className="create-qr-btn" onClick={navigateToCreateQR}>
+          <span className="plus-icon">+</span> Создать QR
+        </button>
       </div>
 
-      <div className="section-header" onClick={() => setShowFolders(!showFolders)}>
-        Ваши папки:
-        <span>{showFolders ? '▼' : '►'}</span>
-      </div>
-      
-      {showFolders && (
-        <div className="folder-tree">
-          {folders.map(folder => (
-            <div key={folder.id} className="folder-item" onClick={() => openFolder(folder.id)}>
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5v9a1.5 1.5 0 001.5 1.5h15a1.5 1.5 0 001.5-1.5v-6a1.5 1.5 0 00-1.5-1.5h-9l-2-3H4.5A1.5 1.5 0 003 7.5z" />
-              </svg>
-              {folder.name}
-            </div>
-          ))}
-          
-          <div className="folder-item create-folder" onClick={handleCreateFolder}>
-            <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            Создать папку
-          </div>
+      <div className="folders-section">
+        <div className="section-header" onClick={() => setShowFolders(!showFolders)}>
+          Ваши папки:
+          <span className="toggle-icon">{showFolders ? '▼' : '►'}</span>
         </div>
-      )}
-
-      {showNewFolderInput && (
-        <div className="new-folder-input">
-          <input
-            type="text"
-            value={newFolderName}
-            onChange={(e) => setNewFolderName(e.target.value)}
-            placeholder="Название папки"
-            className="folder-input"
-          />
-          <button onClick={saveNewFolder} className="save-button">Сохранить</button>
-        </div>
-      )}
-
-      <div className="qr-section-title">Ваши QR-коды:</div>
-      <div id="qrList">
-        {qrCodes
-          .filter(qr => qr.folderId === null)
-          .map((qr) => (
-            <div key={qr.id} className="qr-card">
-              <div className="qr-left">
-                <img src={qr.imageUrl} alt="QR Code" />
-                <div className="qr-info">
-                  <strong>{qr.name}</strong>
-                  <span>{qr.link.replace('https://', '')}</span>
+        
+        {showFolders && (
+          <div className="folders-content">
+            <div className="folders-list">
+              {folders.map(folder => (
+                <div key={folder.id} className="folder-item" onClick={() => openFolder(folder.id)}>
+                  <span className="folder-icon">📁</span>
+                  <span className="folder-name">{folder.name}</span>
                 </div>
+              ))}
+              
+              <div className="folder-item create-folder-btn" onClick={handleCreateFolder}>
+                <span className="plus-icon">+</span>
+                <span className="folder-name">Создать папку</span>
               </div>
-              <div className="qr-count">Сканирований: {qr.scanNumber}</div>
             </div>
-          ))}
+            
+            {showNewFolderInput && (
+              <div className="new-folder-form">
+                <input
+                  type="text"
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  placeholder="Название папки"
+                  className="folder-input"
+                />
+                <button onClick={saveNewFolder} className="save-btn">Сохранить</button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="qr-codes-section">
+        <div className="section-title">Ваши QR-коды:</div>
+        <div className="qr-list">
+          {qrCodes
+            .filter(qr => qr.folderId === null)
+            .map((qr) => (
+              <div key={qr.id} className="qr-card">
+                <div className="qr-left">
+                  <img src={qr.imageUrl} alt="QR Code" />
+                  <div className="qr-info">
+                    <strong>{qr.name}</strong>
+                    <span>{qr.link.replace('https://', '')}</span>
+                  </div>
+                </div>
+                <div className="qr-count">Сканирований: {qr.scanNumber}</div>
+              </div>
+            ))}
+        </div>
       </div>
     </>
   );
@@ -313,7 +333,7 @@ function App() {
   // Отображение содержимого папки
   const renderFolder = () => (
     <>
-      <div className="folder-navigation">
+      <div className="folder-header">
         <button className="back-button" onClick={goBack}>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -321,32 +341,16 @@ function App() {
           Назад
         </button>
         <div className="folder-title">{activeFolder.name}</div>
-        <button className="create-folder-button" onClick={handleCreateFolder}>
-          + Создать папку
-        </button>
       </div>
 
-      {showNewFolderInput && (
-        <div className="new-folder-input">
-          <input
-            type="text"
-            value={newFolderName}
-            onChange={(e) => setNewFolderName(e.target.value)}
-            placeholder="Название папки"
-            className="folder-input"
-          />
-          <button onClick={saveNewFolder} className="save-button">Сохранить</button>
-        </div>
-      )}
-
       <div className="qr-section-header">
-        <div className="qr-section-title">QR-коды в этой папке</div>
+        <div className="section-title">QR-коды в этой папке</div>
         <button className="add-qr-button" onClick={addQRToFolder}>
           + Добавить QR
         </button>
       </div>
 
-      <div id="qrList">
+      <div className="qr-list">
         {qrCodes
           .filter(qr => qr.folderId === activeFolder.id)
           .map((qr) => (
