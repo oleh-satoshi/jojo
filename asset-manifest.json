@@ -1,10 +1,10 @@
 {
   "files": {
-    "main.css": "/your-repo-name/static/css/main.7d1ddf5a.css",
-    "main.js": "/your-repo-name/static/js/main.5bddb3e2.js",
-    "index.html": "/your-repo-name/index.html",
-    "main.7d1ddf5a.css.map": "/your-repo-name/static/css/main.7d1ddf5a.css.map",
-    "main.5bddb3e2.js.map": "/your-repo-name/static/js/main.5bddb3e2.js.map"
+    "main.css": "/jojo/static/css/main.7d1ddf5a.css",
+    "main.js": "/jojo/static/js/main.5bddb3e2.js",
+    "index.html": "/jojo/index.html",
+    "main.7d1ddf5a.css.map": "/jojo/static/css/main.7d1ddf5a.css.map",
+    "main.5bddb3e2.js.map": "/jojo/static/js/main.5bddb3e2.js.map"
   },
   "entrypoints": [
     "static/css/main.7d1ddf5a.css",
