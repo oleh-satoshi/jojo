@@ -21,7 +21,7 @@ function App() {
   const modalRef = useRef(null);
   const newFolderInputRef = useRef(null);
 
-  // Get query parameters from URL
+  // Get query parameters from URL and load data
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const telegramId = params.get('telegramId');
@@ -38,72 +38,86 @@ function App() {
       setScanCount(Number(localStorage.getItem('totalScans') || 0));
     }
     
-    // Sample folder structure with nesting
-    const sampleFolders = [
-      {
-        id: "1",
-        name: "Личные QR",
-        level: 0,
-        parentId: null,
-      },
-      {
-        id: "2",
-        name: "Рабочие QR с очень длинным названием для тестирования",
-        level: 0,
-        parentId: null,
-      },
-      {
-        id: "3",
-        name: "Клиенты",
-        level: 1,
-        parentId: "2",
-      },
-      {
-        id: "4",
-        name: "Встречи",
-        level: 1,
-        parentId: "2",
-      },
-      {
-        id: "5",
-        name: "Важные",
-        level: 2,
-        parentId: "4",
-      }
-    ];
+    // Load folders from localStorage or use default sample data if none exists
+    let storedFolders = JSON.parse(localStorage.getItem('folders') || '[]');
     
-    setFolders(sampleFolders);
+    if (storedFolders.length === 0) {
+      // Sample folder structure with nesting
+      storedFolders = [
+        {
+          id: "1",
+          name: "Личные QR",
+          level: 0,
+          parentId: null,
+        },
+        {
+          id: "2",
+          name: "Рабочие QR с очень длинным названием для тестирования",
+          level: 0,
+          parentId: null,
+        },
+        {
+          id: "3",
+          name: "Клиенты",
+          level: 1,
+          parentId: "2",
+        },
+        {
+          id: "4",
+          name: "Встречи",
+          level: 1,
+          parentId: "2",
+        },
+        {
+          id: "5",
+          name: "Важные",
+          level: 2,
+          parentId: "4",
+        }
+      ];
+      
+      localStorage.setItem('folders', JSON.stringify(storedFolders));
+    }
+    
+    setFolders(storedFolders);
     
     // Автоматически раскрываем все папки для демонстрации
     const expandedState = {};
-    sampleFolders.forEach(folder => {
+    storedFolders.forEach(folder => {
       expandedState[folder.id] = true;
     });
     setExpandedFolders(expandedState);
-
-    localStorage.setItem('folders', JSON.stringify(sampleFolders));
     
-    // Sample QR code data for demonstration
-    setQrCodes([
-      {
-        id: "1",
-        name: "Get Free Coffee at Starbucks with Very Long Name for Testing Overflow",
-        link: "https://example.com/starbucks/promotion/winter/coffee/free",
-        scanNumber: 42,
-        folderId: "5",
-        active: true,
-        imageUrl: "https://api.qrserver.com/v1/create-qr-code/?data=coffee"
-      },
-      {
-        id: "2",
-        name: "Website QR",
-        link: "https://example.com",
-        scanNumber: 23,
-        folderId: null,
-        active: true,
-        imageUrl: "https://api.qrserver.com/v1/create-qr-code/?data=example"
-      }
-    ]);
+    // Load QR codes from localStorage or use sample data if none exists
+    let storedQRs = JSON.parse(localStorage.getItem('qr_codes') || '[]');
+    
+    if (storedQRs.length === 0) {
+      // Sample QR code data for demonstration
+      storedQRs = [
+        {
+          id: "1",
+          name: "Get Free Coffee at Starbucks with Very Long Name for Testing Overflow",
+          link: "https://example.com/starbucks/promotion/winter/coffee/free",
+          scanNumber: 42,
+          folderId: "5",
+          active: true,
+          imageUrl: "https://api.qrserver.com/v1/create-qr-code/?data=coffee"
+        },
+        {
+          id: "2",
+          name: "Website QR",
+          link: "https://example.com",
+          scanNumber: 23,
+          folderId: null,
+          active: true,
+          imageUrl: "https://api.qrserver.com/v1/create-qr-code/?data=example"
+        }
+      ];
+      
+      localStorage.setItem('qr_codes', JSON.stringify(storedQRs));
+    }
+    
+    setQrCodes(storedQRs);
 
     // Закрываем модальное окно при клике вне его
     const handleClickOutside = (event) => {
@@ -193,6 +207,7 @@ function App() {
       setFolders(updatedFolders);
       setQrCodes(updatedQRs);
       localStorage.setItem('folders', JSON.stringify(updatedFolders));
+      localStorage.setItem('qr_codes', JSON.stringify(updatedQRs));
     } else {
       // Удалить только папку, QR-коды перенести в корень
       const updatedFolders = folders.filter(folder => folder.id !== folderId);
@@ -203,6 +218,7 @@ function App() {
       setFolders(updatedFolders);
       setQrCodes(updatedQRs);
       localStorage.setItem('folders', JSON.stringify(updatedFolders));
+      localStorage.setItem('qr_codes', JSON.stringify(updatedQRs));
     }
     
     setShowDeleteConfirm(null);
@@ -244,6 +260,7 @@ function App() {
     );
     
     setQrCodes(updatedQRs);
+    localStorage.setItem('qr_codes', JSON.stringify(updatedQRs));
     setSelectedQR(prev => prev ? {...prev, ...updates} : null);
   };
 
