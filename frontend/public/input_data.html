@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Создать QR-код</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            font-size: 24px;
+            color: #333;
+            text-align: center;
+        }
+        .form-container {
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.15);
+            max-width: 400px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        .form-group input {
+            width: 95%;
+            margin: 0 auto;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            display: block;
+        }
+        .create-button {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .create-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .create-button.success {
+            background-color: #4CAF50 !important;
+            color: #fff !important;
+        }
+        
+        .after-buttons {
+            margin-top: 20px;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .after-buttons.show {
+            opacity: 1;
+        }
+        .after-buttons button {
+            background-color: #000;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            margin: 0;
+            font-size: 16px;
+            width: 100%;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Последний шаг:</h1>
+    <div class="form-container">
+        <form id="qrForm">
+            <div class="form-group">
+                <label for="qrName">Название QR-кода</label>
+                <input type="text" id="qrName" name="qrName" required>
+            </div>
+            <div class="form-group">
+                <label for="qrLink">Ссылка</label>
+                <input type="text" id="qrLink" name="qrLink" required>
+            </div>
+            <div class="form-group" id="additionalField" style="display: none;">
+                <label for="qrText">Дополнительный текст</label>
+                <input type="text" id="qrText" name="qrText">
+            </div>
+            <button type="button" class="create-button" id="createButton" disabled onclick="createQRCode()">Создать QR-код</button>
+        </form>
+    </div>
+    <div class="after-buttons" id="afterButtons">
+        <button id="backButton" onclick="location.href='/'">В главное меню</button>
+    </div>
+    
+    <script>
+        const qrNameInput = document.getElementById('qrName');
+        const qrLinkInput = document.getElementById('qrLink');
+        const qrTextInput = document.getElementById('qrText');
+        const createButton = document.getElementById('createButton');
+        const additionalField = document.getElementById('additionalField');
+        const afterButtons = document.getElementById('afterButtons');
+        
+        // Устанавливаем начальное значение firstClick
+        let firstClick = true;
+        
+        const funnyMessages = [
+            "Терпение — путь к успеху!",
+            "Ваш QR-код уже готовится!",
+            "Кто ждет, тот получает лучшее!",
+            "Чудо скоро случится!",
+            "Мы работаем над этим.",
+            "QR-код уже в духовке!",
+            "Терпение, друг мой, терпение...",
+            "Чем больше ждешь, тем слаще результат.",
+            "Не торопись, всё получится!",
+            "QR-коды тоже хотят внимания."
+        ];
+        
+        const requiresAdditionalField = localStorage.getItem('requiresAdditionalField');
+        
+        if (requiresAdditionalField !== null) {
+            additionalField.style.display = requiresAdditionalField === 'true' ? 'block' : 'none';
+        }
+        
+        function updateButtonState() {
+            const qrName = qrNameInput.value.trim();
+            const qrLink = qrLinkInput.value.trim();
+            const qrText = (requiresAdditionalField === 'true') ? qrTextInput.value.trim() : '';
+            createButton.disabled = !(qrName && qrLink && (requiresAdditionalField === 'false' || qrText));
+        }
+        
+        qrNameInput.addEventListener('input', updateButtonState);
+        qrLinkInput.addEventListener('input', updateButtonState);
+        qrTextInput.addEventListener('input', updateButtonState);
+        
+        async function createQRCode() {
+            const qrName = qrNameInput.value.trim();
+            const qrLink = qrLinkInput.value.trim();
+            const qrText = (requiresAdditionalField === 'true') ? qrTextInput.value.trim() : null;
+            
+            const telegramId = localStorage.getItem('telegramId') || 'user123';
+            const qrData = {
+                backgroundShape: localStorage.getItem('backgroundShape'),
+                qrDesign: localStorage.getItem('qrDesign'),
+                telegramId: telegramId,
+                name: qrName,
+                link: qrLink,
+                additionalText: qrText
+            };
+            
+            console.log('Отправляем запрос:', JSON.stringify(qrData));
+            
+            if (firstClick) {
+                // Применяем зелёный фон и меняем текст кнопки
+                createButton.classList.add('success');
+                createButton.textContent = 'Отправляем QR-коды в ваши личные сообщения...';
+                firstClick = false;
+                
+                const confettiConfig = {
+                    particleCount: 100,
+                    startVelocity: 30,
+                    spread: 360,
+                    ticks: 60,
+                    zIndex: 0,
+                };
+                const duration = 3000;
+                const animationEnd = Date.now() + duration;
+                const interval = setInterval(() => {
+                    const timeLeft = animationEnd - Date.now();
+                    if (timeLeft <= 0) {
+                        return clearInterval(interval);
+                    }
+                    const particleCount = 50 * (timeLeft / duration);
+                    confetti(Object.assign({}, confettiConfig, {
+                        particleCount,
+                        origin: { x: Math.random(), y: Math.random() - 0.2 },
+                    }));
+                }, 250);
+                
+                setTimeout(() => {
+                    afterButtons.classList.add('show');
+                    console.log('Показали другие кнопки.');
+                }, 2000);
+                
+                // Сохраняем QR-код в localStorage
+                try {
+                    const storedQRs = JSON.parse(localStorage.getItem('qr_codes') || '[]');
+                    const newQR = {
+                        id: Date.now().toString(),
+                        name: qrName,
+                        link: qrLink,
+                        additionalText: qrText,
+                        folderId: new URLSearchParams(window.location.search).get('folderId') || null,
+                        scanNumber: 0,
+                        active: true,
+                        imageUrl: `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrLink)}&size=200x200`
+                    };
+                    
+                    storedQRs.push(newQR);
+                    localStorage.setItem('qr_codes', JSON.stringify(storedQRs));
+                } catch (error) {
+                    console.error('Ошибка при сохранении QR-кода:', error);
+                }
+            } else {
+                console.log('Повторный клик, выводим случайное сообщение.');
+                const randomMessage = funnyMessages[Math.floor(Math.random() * funnyMessages.length)];
+                createButton.textContent = randomMessage;
+            }
+        }
+        
+        document.getElementById('backButton').addEventListener('click', function (e) {
+            e.preventDefault();
+            const telegramId = localStorage.getItem('telegramId');
+            const totalScans = localStorage.getItem('totalScans');
+            if (telegramId) {
+                window.location.href = `/?telegramId=${telegramId}&totalScans=${totalScans}`;
+            } else {
+                window.location.href = '/';
+            }
+        });
+    </script>
+</body>
+</html>
