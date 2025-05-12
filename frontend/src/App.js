@@ -10,6 +10,8 @@ function App() {
   const [qrCodes, setQrCodes] = useState([]);
   const [expandedFolders, setExpandedFolders] = useState({});
   const [activeFolderMenu, setActiveFolderMenu] = useState(null);
+  const [editingFolder, setEditingFolder] = useState(null);
+  const [editingFolderName, setEditingFolderName] = useState("");
 
   // Get query parameters from URL
   useEffect(() => {
@@ -125,23 +127,35 @@ function App() {
     }
   };
 
-  const deleteFolder = (folderId) => {
+  const deleteFolder = (folderId, e) => {
+    if (e) e.stopPropagation();
     const updatedFolders = folders.filter(folder => folder.id !== folderId);
     setFolders(updatedFolders);
     localStorage.setItem('folders', JSON.stringify(updatedFolders));
     setActiveFolderMenu(null);
   };
 
-  const renameFolder = (folderId, newName) => {
-    const updatedFolders = folders.map(folder => 
-      folder.id === folderId ? { ...folder, name: newName } : folder
-    );
-    setFolders(updatedFolders);
-    localStorage.setItem('folders', JSON.stringify(updatedFolders));
+  const startRenameFolder = (folderId, currentName, e) => {
+    if (e) e.stopPropagation();
+    setEditingFolder(folderId);
+    setEditingFolderName(currentName);
     setActiveFolderMenu(null);
   };
 
-  const deleteFolderWithQRs = (folderId) => {
+  const saveRenameFolder = (e) => {
+    if (e) e.preventDefault();
+    if (editingFolderName.trim() && editingFolder) {
+      const updatedFolders = folders.map(folder => 
+        folder.id === editingFolder ? { ...folder, name: editingFolderName } : folder
+      );
+      setFolders(updatedFolders);
+      localStorage.setItem('folders', JSON.stringify(updatedFolders));
+      setEditingFolder(null);
+    }
+  };
+
+  const deleteFolderWithQRs = (folderId, e) => {
+    if (e) e.stopPropagation();
     // Delete folder and remove QR codes in that folder
     const updatedFolders = folders.filter(folder => folder.id !== folderId);
     const updatedQRs = qrCodes.filter(qr => qr.folderId !== folderId);
@@ -150,6 +164,12 @@ function App() {
     setQrCodes(updatedQRs);
     localStorage.setItem('folders', JSON.stringify(updatedFolders));
     setActiveFolderMenu(null);
+  };
+
+  const createQRInFolder = (folderId, e) => {
+    if (e) e.stopPropagation();
+    // Redirect to QR creation page with folder ID
+    window.location.href = `qr_shape_picker.html?folderId=${folderId}`;
   };
 
   const renderFolders = (parentId = null, level = 0) => {
@@ -173,25 +193,59 @@ function App() {
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="folder-icon">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5v9a1.5 1.5 0 001.5 1.5h15a1.5 1.5 0 001.5-1.5v-6a1.5 1.5 0 00-1.5-1.5h-9l-2-3H4.5A1.5 1.5 0 003 7.5z" />
               </svg>
-              <span className="folder-name">{folder.name}</span>
               
-              <div className="folder-menu-container">
+              {editingFolder === folder.id ? (
+                <form onSubmit={saveRenameFolder} className="rename-form">
+                  <input
+                    type="text"
+                    value={editingFolderName}
+                    onChange={(e) => setEditingFolderName(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    autoFocus
+                    className="rename-input"
+                  />
+                  <button 
+                    type="submit" 
+                    className="rename-save-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      saveRenameFolder();
+                    }}
+                  >
+                    ✓
+                  </button>
+                </form>
+              ) : (
+                <span className="folder-name">{folder.name}</span>
+              )}
+              
+              <div className="folder-actions">
+                <button 
+                  className="folder-add-qr-btn" 
+                  onClick={(e) => createQRInFolder(folder.id, e)}
+                  title="Добавить QR код в папку"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <rect x="8" y="8" width="8" height="8"></rect>
+                    <line x1="12" y1="3" x2="12" y2="8"></line>
+                    <line x1="3" y1="12" x2="8" y2="12"></line>
+                  </svg>
+                </button>
+                
                 <button className="folder-menu-btn" onClick={(e) => toggleFolderMenu(folder.id, e)}>
-                  ⋮
+                  ⋯
                 </button>
                 
                 {activeFolderMenu === folder.id && (
-                  <div className="folder-menu">
-                    <div className="menu-item" onClick={() => {
-                      const newName = prompt("Введите новое имя папки:", folder.name);
-                      if (newName) renameFolder(folder.id, newName);
-                    }}>
+                  <div className="folder-menu" onClick={(e) => e.stopPropagation()}>
+                    <div className="menu-item" onClick={(e) => startRenameFolder(folder.id, folder.name, e)}>
                       Переименовать
                     </div>
-                    <div className="menu-item" onClick={() => deleteFolder(folder.id)}>
+                    <div className="menu-item" onClick={(e) => deleteFolder(folder.id, e)}>
                       Удалить папку
                     </div>
-                    <div className="menu-item" onClick={() => deleteFolderWithQRs(folder.id)}>
+                    <div className="menu-item" onClick={(e) => deleteFolderWithQRs(folder.id, e)}>
                       Удалить со всеми QR
                     </div>
                   </div>
@@ -214,7 +268,7 @@ function App() {
                         <span>{qr.link.replace('https://', '')}</span>
                       </div>
                     </div>
-                    <div className="qr-scan-badge">
+                    <div className="qr-scan-count">
                       {qr.scanNumber}
                     </div>
                   </div>
@@ -238,7 +292,29 @@ function App() {
         <div className="vertical-divider"></div>
         
         <button className="create-qr-btn" onClick={() => window.location.href='qr_shape_picker.html'}>
-          <div className="plus-icon">+</div>
+          <svg className="qr-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 3H9V9H3V3Z" stroke="#000" strokeWidth="1.5" />
+            <path d="M15 3H21V9H15V3Z" stroke="#000" strokeWidth="1.5" />
+            <path d="M3 15H9V21H3V15Z" stroke="#000" strokeWidth="1.5" />
+            <path d="M12 15H12.01" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M18 15H18.01" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M18 18H18.01" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M18 21H18.01" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M12 21H12.01" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M12 18H12.01" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M15 12H15.01" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M18 12H18.01" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M21 12H21.01" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M21 15H21.01" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M21 18H21.01" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M21 21H21.01" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M12 12H12.01" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M6 12H6.01" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M3 12H3.01" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M12 3V9" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M3 21V21.01" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+          <span className="plus-icon">+</span>
           <div className="create-text">
             создать<br />qr
           </div>
@@ -265,6 +341,7 @@ function App() {
                 onChange={(e) => setNewFolderName(e.target.value)}
                 placeholder="Название папки"
                 className="folder-input"
+                autoFocus
               />
               <button onClick={saveNewFolder} className="save-button">Сохранить</button>
             </div>
@@ -287,7 +364,7 @@ function App() {
                   <span>{qr.link.replace('https://', '')}</span>
                 </div>
               </div>
-              <div className="qr-scan-badge">
+              <div className="qr-scan-count">
                 {qr.scanNumber}
               </div>
             </div>
