@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Создание QR-кода</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      color: #000;
+    }
+    
+    .container {
+      width: 100%;
+      max-width: 500px;
+      background-color: #fff;
+      border-radius: 24px;
+      padding: 30px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+      text-align: center;
+    }
+    
+    h1 {
+      font-size: 24px;
+      margin-bottom: 30px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
+    
+    textarea {
+      height: 100px;
+      resize: vertical;
+    }
+    
+    .buttons {
+      display: flex;
+      gap: 15px;
+      margin-top: 30px;
+    }
+    
+    .back-btn {
+      flex: 1;
+      padding: 12px;
+      background-color: #f0f0f0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    
+    .create-btn {
+      flex: 1;
+      padding: 12px;
+      background-color: #3b60e4;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    
+    .qr-preview {
+      margin-top: 30px;
+      display: none;
+    }
+    
+    .qr-preview img {
+      width: 200px;
+      height: 200px;
+      border: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Создание нового QR-кода</h1>
+    
+    <div class="form-group">
+      <label for="qr-name">Название QR-кода</label>
+      <input type="text" id="qr-name" placeholder="Введите название QR-кода">
+    </div>
+    
+    <div class="form-group">
+      <label for="qr-link">Ссылка</label>
+      <input type="text" id="qr-link" placeholder="https://">
+    </div>
+    
+    <div class="form-group">
+      <label for="qr-description">Описание (необязательно)</label>
+      <textarea id="qr-description" placeholder="Добавьте описание для вашего QR-кода"></textarea>
+    </div>
+    
+    <div class="qr-preview" id="qr-preview">
+      <h3>Предпросмотр QR-кода</h3>
+      <img id="preview-image" src="" alt="QR Preview">
+    </div>
+    
+    <div class="buttons">
+      <button class="back-btn" onclick="goBack()">Назад</button>
+      <button class="create-btn" onclick="createQR()">Создать QR</button>
+    </div>
+  </div>
+
+  <script>
+    // Получаем параметры из URL
+    const params = new URLSearchParams(window.location.search);
+    const folderId = params.get('folderId');
+    
+    function goBack() {
+      window.location.href = '/';
+    }
+    
+    function createQR() {
+      const name = document.getElementById('qr-name').value;
+      const link = document.getElementById('qr-link').value;
+      const description = document.getElementById('qr-description').value;
+      
+      if (!name || !link) {
+        alert('Пожалуйста, заполните название и ссылку QR-кода');
+        return;
+      }
+      
+      // Генерируем QR-код с помощью API
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(link)}&size=200x200`;
+      
+      // Показываем предпросмотр
+      document.getElementById('preview-image').src = qrUrl;
+      document.getElementById('qr-preview').style.display = 'block';
+      
+      // Сохраняем QR-код в localStorage
+      const existingQRs = JSON.parse(localStorage.getItem('qr_codes') || '[]');
+      const newQR = {
+        id: Date.now().toString(),
+        name: name,
+        link: link,
+        description: description,
+        folderId: folderId,
+        scanNumber: 0,
+        active: true,
+        imageUrl: qrUrl,
+        createdAt: new Date().toISOString()
+      };
+      
+      existingQRs.push(newQR);
+      localStorage.setItem('qr_codes', JSON.stringify(existingQRs));
+      
+      // Перенаправляем после небольшой задержки
+      setTimeout(() => {
+        alert('QR-код успешно создан!');
+        window.location.href = '/';
+      }, 1500);
+    }
+  </script>
+</body>
+</html>
