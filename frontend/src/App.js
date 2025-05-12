@@ -13,6 +13,7 @@ function App() {
   const [selectedQR, setSelectedQR] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [deleteType, setDeleteType] = useState("");
+  const [showFolders, setShowFolders] = useState(false);
   
   // Форма для создания QR
   const [qrName, setQrName] = useState("");
