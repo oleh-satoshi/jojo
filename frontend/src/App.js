@@ -174,7 +174,8 @@ function App() {
   };
 
   // Функции для работы с QR-кодами
-  const navigateToCreateQR = () => {
+  const navigateToCreateQR = (folderId = null) => {
+    setActiveFolder(folderId ? folders.find(f => f.id === folderId) : null);
     setCurrentPage("createQR");
     setQrName("");
     setQrLink("");
@@ -235,12 +236,6 @@ function App() {
     setQrCreated(true);
   };
 
-  const addQRToFolder = () => {
-    if (activeFolder) {
-      navigateToCreateQR();
-    }
-  };
-
   // Выбор стиля QR-кода
   const qrStyles = [
     {
@@ -265,7 +260,7 @@ function App() {
           <div className="scan-label">сканирований</div>
         </div>
         
-        <button className="create-qr-btn" onClick={navigateToCreateQR}>
+        <button className="create-qr-btn" onClick={() => navigateToCreateQR()}>
           <span className="plus-icon">+</span> Создать QR
         </button>
       </div>
@@ -281,7 +276,9 @@ function App() {
             <div className="folders-list">
               {folders.map(folder => (
                 <div key={folder.id} className="folder-item" onClick={() => openFolder(folder.id)}>
-                  <span className="folder-icon">📁</span>
+                  <svg className="folder-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 7.5V18.5C3 19.0523 3.44772 19.5 4 19.5H20C20.5523 19.5 21 19.0523 21 18.5V8.5C21 7.94772 20.5523 7.5 20 7.5H11L9 4.5H4C3.44772 4.5 3 4.94772 3 5.5V7.5Z" stroke="black" strokeWidth="1.5"/>
+                  </svg>
                   <span className="folder-name">{folder.name}</span>
                 </div>
               ))}
@@ -322,7 +319,7 @@ function App() {
                     <span>{qr.link.replace('https://', '')}</span>
                   </div>
                 </div>
-                <div className="qr-count">Сканирований: {qr.scanNumber}</div>
+                <div className="qr-scan-count">{qr.scanNumber}</div>
               </div>
             ))}
         </div>
@@ -340,17 +337,10 @@ function App() {
           </svg>
           Назад
         </button>
-        <div className="folder-title">{activeFolder.name}</div>
+        <h2 className="folder-title">{activeFolder.name}</h2>
       </div>
 
-      <div className="qr-section-header">
-        <div className="section-title">QR-коды в этой папке</div>
-        <button className="add-qr-button" onClick={addQRToFolder}>
-          + Добавить QR
-        </button>
-      </div>
-
-      <div className="qr-list">
+      <div className="folder-qr-list">
         {qrCodes
           .filter(qr => qr.folderId === activeFolder.id)
           .map((qr) => (
@@ -362,10 +352,14 @@ function App() {
                   <span>{qr.link.replace('https://', '')}</span>
                 </div>
               </div>
-              <div className="qr-count">Сканирований: {qr.scanNumber}</div>
+              <div className="qr-scan-count">{qr.scanNumber}</div>
             </div>
           ))}
       </div>
+
+      <button className="add-qr-to-folder-btn" onClick={() => navigateToCreateQR(activeFolder.id)}>
+        + Добавить новый QR-код сюда
+      </button>
     </>
   );
 

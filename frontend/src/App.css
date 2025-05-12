@@ -56,20 +56,36 @@ body {
 }
 
 .create-qr-btn {
+  width: 110px;
+  height: 110px;
   display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
   background: #fff;
   border: 1px solid #ccc;
   border-radius: 8px;
-  padding: 7px 12px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  gap: 5px;
+  position: relative;
+}
+
+.create-qr-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: #ddd;
+  margin: 0 10px;
 }
 
 .plus-icon {
   font-weight: bold;
+  font-size: 18px;
+  margin-bottom: 5px;
 }
 
 /* Folders Section */
@@ -111,11 +127,12 @@ body {
   border-radius: 8px;
   padding: 12px 15px;
   cursor: pointer;
-  gap: 8px;
+  gap: 10px;
 }
 
 .folder-icon {
-  font-size: 16px;
+  width: 20px;
+  height: 20px;
 }
 
 .folder-name {
@@ -166,7 +183,8 @@ body {
   margin-bottom: 12px;
 }
 
-.qr-list {
+.qr-list,
+.folder-qr-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -174,7 +192,7 @@ body {
 
 .qr-card {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   background: #fff;
   border: 1px solid #eee;
   border-radius: 12px;
@@ -186,7 +204,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 10px;
+  flex: 1;
 }
 
 .qr-left img {
@@ -200,29 +218,38 @@ body {
   display: flex;
   flex-direction: column;
   flex: 1;
+  overflow: hidden;
 }
 
 .qr-info strong {
   font-size: 15px;
   font-weight: 600;
   margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .qr-info span {
   font-size: 13px;
   color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.qr-count {
-  font-size: 14px;
-  font-weight: 500;
-  align-self: flex-end;
+.qr-scan-count {
+  font-size: 48px;
+  font-weight: 700;
+  color: #000;
+  min-width: 60px;
+  text-align: right;
 }
 
 /* Folder Page */
 .folder-header {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 10px;
   margin-bottom: 20px;
 }
@@ -237,6 +264,7 @@ body {
   padding: 8px 12px;
   font-size: 14px;
   cursor: pointer;
+  align-self: flex-start;
 }
 
 .back-button svg {
@@ -246,27 +274,22 @@ body {
 
 .folder-title {
   font-weight: 600;
-  font-size: 16px;
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 18px;
+  align-self: flex-start;
+  margin: 10px 0;
 }
 
-.qr-section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-}
-
-.add-qr-button {
+.add-qr-to-folder-btn {
+  margin-top: 20px;
+  width: 100%;
+  padding: 15px 0;
   background: #f5f5f5;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
+  color: #333;
 }
 
 /* Create QR Page */
@@ -447,5 +470,14 @@ body {
   
   .qr-style-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .create-qr-btn {
+    width: 90px;
+    height: 90px;
+  }
+  
+  .qr-scan-count {
+    font-size: 40px;
   }
 }
