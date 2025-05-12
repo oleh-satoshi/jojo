@@ -1,183 +1,136 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
+  <title>Shape Picker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Создание QR-кода</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+    
     body {
-      font-family: 'Inter', sans-serif;
-      background-color: #f5f5f5;
+      font-family: 'Poppins', sans-serif;
       margin: 0;
-      padding: 0;
+      background-color: #f1f5f9;
+      padding: 0px 30px 30px 30px;
+    }
+    h1 {
+      font-size: 24px;
+      color: #333;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr; /* Одна колонка для телефонов */
+      gap: 20px;
+      justify-content: center;
+      align-items: start;
+    }
+    .card {
+      background-color: #fff;
+      border-radius: 15px;
+      box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.15);
+      padding: 15px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover {
+      transform: scale(1.03);
+      box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.25);
+    }
+    .qr-preview {
+      width: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
-      color: #000;
+      margin-bottom: 15px;
     }
-    
-    .container {
-      width: 100%;
-      max-width: 500px;
-      background-color: #fff;
-      border-radius: 24px;
-      padding: 30px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+    .qr-preview img {
+      max-width: 100%;
+      height: auto;
+    }
+    .shape-name {
+      font-size: 18px;
+      font-weight: bold;
+      margin: 5px 0;
       text-align: center;
     }
-    
-    h1 {
-      font-size: 24px;
-      margin-bottom: 30px;
+    .shape-description {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 10px;
+      text-align: center;
     }
-    
-    .form-group {
-      margin-bottom: 20px;
-      text-align: left;
-    }
-    
-    label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-    
-    input, textarea {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      font-family: 'Inter', sans-serif;
-      font-size: 15px;
-      box-sizing: border-box;
-    }
-    
-    textarea {
-      height: 100px;
-      resize: vertical;
-    }
-    
-    .buttons {
-      display: flex;
-      gap: 15px;
-      margin-top: 30px;
-    }
-    
-    .back-btn {
-      flex: 1;
-      padding: 12px;
-      background-color: #f0f0f0;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      font-family: 'Inter', sans-serif;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    
-    .create-btn {
-      flex: 1;
-      padding: 12px;
-      background-color: #3b60e4;
-      color: white;
+    .select-button {
+      background-color: #000;
+      color: #fff;
       border: none;
-      border-radius: 8px;
-      font-family: 'Inter', sans-serif;
-      font-weight: 600;
+      border-radius: 10px;
+      padding: 12px 20px;
       cursor: pointer;
+      font-size: 16px; /* Увеличен размер текста кнопки */
+      font-weight: bold;
+      transition: background-color 0.2s ease, transform 0.2s ease;
+      width: 100%;
+    }
+    .select-button:hover {
+      background-color: #333;
+      transform: translateY(-2px);
     }
     
-    .qr-preview {
-      margin-top: 30px;
-      display: none;
-    }
-    
-    .qr-preview img {
-      width: 200px;
-      height: 200px;
-      border: 1px solid #eee;
+    .back-link {
+      display: inline-block;
+      margin-top: 20px;
+      color: #333;
+      text-decoration: none;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Создание нового QR-кода</h1>
-    
-    <div class="form-group">
-      <label for="qr-name">Название QR-кода</label>
-      <input type="text" id="qr-name" placeholder="Введите название QR-кода">
-    </div>
-    
-    <div class="form-group">
-      <label for="qr-link">Ссылка</label>
-      <input type="text" id="qr-link" placeholder="https://">
-    </div>
-    
-    <div class="form-group">
-      <label for="qr-description">Описание (необязательно)</label>
-      <textarea id="qr-description" placeholder="Добавьте описание для вашего QR-кода"></textarea>
-    </div>
-    
-    <div class="qr-preview" id="qr-preview">
-      <h3>Предпросмотр QR-кода</h3>
-      <img id="preview-image" src="" alt="QR Preview">
-    </div>
-    
-    <div class="buttons">
-      <button class="back-btn" onclick="goBack()">Назад</button>
-      <button class="create-btn" onclick="createQR()">Создать QR</button>
-    </div>
-  </div>
-
+  <h1>Выбираем цвет</h1>
+  <div class="grid" id="shape-container"></div>
+  <a href="/" class="back-link">← Вернуться к списку QR-кодов</a>
+  
   <script>
-    // Получаем параметры из URL
-    const params = new URLSearchParams(window.location.search);
-    const folderId = params.get('folderId');
-    
-    function goBack() {
-      window.location.href = '/';
-    }
-    
-    function createQR() {
-      const name = document.getElementById('qr-name').value;
-      const link = document.getElementById('qr-link').value;
-      const description = document.getElementById('qr-description').value;
-      
-      if (!name || !link) {
-        alert('Пожалуйста, заполните название и ссылку QR-кода');
-        return;
+    const shapeFiles = [
+      {
+        file: 'https://via.placeholder.com/300x300/000000/FFFFFF?text=Black',
+        additionalField: false,
+        name: 'Black Cube',
+        description: 'Эталон строгости — подчёркивает статус и минимализм.'
+      },
+      {
+        file: 'https://via.placeholder.com/300x300/FFFFFF/000000?text=White',
+        additionalField: false,
+        name: 'White Prism',
+        description: 'Светлая чистота, которая бросается в глаза.'
       }
-      
-      // Генерируем QR-код с помощью API
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(link)}&size=200x200`;
-      
-      // Показываем предпросмотр
-      document.getElementById('preview-image').src = qrUrl;
-      document.getElementById('qr-preview').style.display = 'block';
-      
-      // Сохраняем QR-код в localStorage
-      const existingQRs = JSON.parse(localStorage.getItem('qr_codes') || '[]');
-      const newQR = {
-        id: Date.now().toString(),
-        name: name,
-        link: link,
-        description: description,
-        folderId: folderId,
-        scanNumber: 0,
-        active: true,
-        imageUrl: qrUrl,
-        createdAt: new Date().toISOString()
-      };
-      
-      existingQRs.push(newQR);
-      localStorage.setItem('qr_codes', JSON.stringify(existingQRs));
-      
-      // Перенаправляем после небольшой задержки
-      setTimeout(() => {
-        alert('QR-код успешно создан!');
-        window.location.href = '/';
-      }, 1500);
+    ];
+    
+    const shapeContainer = document.getElementById('shape-container');
+    shapeFiles.forEach((shape) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="qr-preview">
+          <img src="${shape.file}" alt="${shape.name}">
+        </div>
+        <div class="shape-name">${shape.name}</div>
+        <div class="shape-description">${shape.description}</div>
+        <button class="select-button" onclick="selectShape('${shape.file}', ${shape.additionalField}, '${shape.additionalText || ''}')">Выбрать</button>
+      `;
+      shapeContainer.appendChild(card);
+    });
+    
+    function selectShape(shapePath, additionalField, additionalText) {
+      localStorage.setItem('backgroundShape', shapePath);
+      localStorage.setItem('requiresAdditionalField', additionalField);
+      if (additionalText) {
+        localStorage.setItem('additionalText', additionalText);
+      } else {
+        localStorage.removeItem('additionalText');
+      }
+      window.location.href = '/';
     }
   </script>
 </body>
